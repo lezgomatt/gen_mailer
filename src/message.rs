@@ -27,6 +27,7 @@ pub struct Message<'a> {
 //     pub bytes: Cow<'a, [u8]>,
 // }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum MessageBuilderError {
     MissingFrom,

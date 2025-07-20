@@ -3,6 +3,9 @@ name = "gen_mailer"
 version = "0.1.0"
 edition = "2024"
 
+[lints.clippy]
+needless_return = "allow"
+
 [features]
 default = []
 sendgrid = ["__reqwest", "dep:serde", "dep:serde_json"]
