@@ -168,7 +168,7 @@ mod tests {
         assert_eq!(message.to.len(), 1);
         assert_eq!(message.to[0].email, "recipient@example.com");
         assert_eq!(message.subject, "Test Email");
-        assert_eq!(message.text_body.as_deref(), Some("Test email body."));
+        assert_eq!(message.text_body.as_deref(), Some("This is a test email."));
 
         // TODO: Test the optional fields
     }
