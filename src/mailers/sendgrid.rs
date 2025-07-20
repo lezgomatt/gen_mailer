@@ -30,7 +30,7 @@ impl SendGridMailer {
 #[async_trait]
 impl Mailer for SendGridMailer {
     async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
-        let request = SendGridMailer::build_request(m);
+        let request = Self::build_request(m);
 
         let response = self
             .client
@@ -78,17 +78,16 @@ impl SendGridMailer {
     }
 
     fn build_personalization(m: &Message) -> serde_json::Value {
-        let to: Vec<_> = m.to.iter().map(Self::build_address).collect();
-        let mut personalization = json!({ "to": to });
+        let mut personalization = json!({
+            "to": m.to.iter().map(Self::build_address).collect::<serde_json::Value>(),
+        });
 
         if !m.cc.is_empty() {
-            let cc: Vec<_> = m.cc.iter().map(Self::build_address).collect();
-            personalization["cc"] = json!(cc);
+            personalization["cc"] = m.cc.iter().map(Self::build_address).collect();
         }
 
         if !m.bcc.is_empty() {
-            let bcc: Vec<_> = m.bcc.iter().map(Self::build_address).collect();
-            personalization["bcc"] = json!(bcc);
+            personalization["bcc"] = m.bcc.iter().map(Self::build_address).collect();
         }
 
         return personalization;

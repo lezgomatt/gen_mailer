@@ -9,6 +9,7 @@ needless_return = "allow"
 [features]
 default = []
 aws_ses = ["dep:aws-sdk-sesv2"]
+mailtrap = ["__reqwest", "dep:serde", "dep:serde_json"]
 sendgrid = ["__reqwest", "dep:serde", "dep:serde_json"]
 __reqwest = ["dep:reqwest"]
 
@@ -16,7 +17,7 @@ __reqwest = ["dep:reqwest"]
 async-trait = "0.1"
 aws-sdk-sesv2 = { version = "1.27", optional = true }
 reqwest = { version = "0.11", features = ["json"], optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true }
+serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0", optional = true }
 
 # [dev-dependencies]
