@@ -12,7 +12,7 @@ pub struct ConsoleMailer;
 #[async_trait]
 impl Mailer for ConsoleMailer {
     async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
-        let _ = self.send(io::stdout(), m); // FIXME
+        self.send(io::stdout(), m)?;
 
         return Ok(Vec::new());
     }
