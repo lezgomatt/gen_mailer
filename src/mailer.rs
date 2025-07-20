@@ -34,3 +34,10 @@ impl From<std::io::Error> for MailerError {
         return MailerError::UnexpectedError(Box::new(err));
     }
 }
+
+#[cfg(feature = "__reqwest")]
+impl From<reqwest::Error> for MailerError {
+    fn from(err: reqwest::Error) -> Self {
+        return MailerError::UnexpectedError(Box::new(err));
+    }
+}

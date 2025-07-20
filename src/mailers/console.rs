@@ -12,14 +12,14 @@ pub struct ConsoleMailer;
 #[async_trait]
 impl Mailer for ConsoleMailer {
     async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
-        self.send(io::stdout(), m)?;
+        Self::send(io::stdout(), m)?;
 
         return Ok(Vec::new());
     }
 }
 
 impl ConsoleMailer {
-    fn send(&self, mut w: impl io::Write, m: &Message) -> Result<(), std::io::Error> {
+    fn send(mut w: impl io::Write, m: &Message) -> Result<(), std::io::Error> {
         writeln!(w, "============ [ BEGIN EMAIL ] ============")?;
         writeln!(w, "From: {}", m.from)?;
 
@@ -71,7 +71,6 @@ mod tests {
 
     #[test]
     fn test_console_mailer() {
-        let mailer = ConsoleMailer;
         let message = MessageBuilder::new()
             .from(Address::with_name("Sender", "sender@example.com"))
             .to(Address::with_name("Recipient", "recipient@example.com"))
@@ -95,7 +94,7 @@ mod tests {
         .join("\n");
 
         let mut actual = Vec::new();
-        mailer.send(&mut actual, &message).unwrap();
+        ConsoleMailer::send(&mut actual, &message).unwrap();
         let actual = String::from_utf8(actual).unwrap();
 
         assert_eq!(actual, expected);

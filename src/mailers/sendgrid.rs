@@ -1,0 +1,168 @@
+use async_trait::async_trait;
+use serde_json::json;
+
+use crate::Address;
+use crate::Mailer;
+use crate::MailerError;
+use crate::Message;
+
+pub struct SendGridMailer {
+    client: reqwest::Client,
+    api_key: String,
+}
+
+impl SendGridMailer {
+    pub fn new(api_key: impl Into<String>) -> Self {
+        Self {
+            client: reqwest::Client::new(),
+            api_key: api_key.into(),
+        }
+    }
+
+    pub fn with_client(client: reqwest::Client, api_key: impl Into<String>) -> Self {
+        Self {
+            client,
+            api_key: api_key.into(),
+        }
+    }
+}
+
+#[async_trait]
+impl Mailer for SendGridMailer {
+    async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
+        let request = SendGridMailer::build_request(m);
+
+        let response = self
+            .client
+            .post("https://api.sendgrid.com/v3/mail/send")
+            .bearer_auth(&self.api_key)
+            .json(&request)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status_code = response.status().as_u16();
+            let body = response.text().await?;
+
+            return Err(MailerError::UnexpectedResponse(status_code, body));
+        }
+
+        // NOTE: x-message-id is not the same as the message ID,
+        // but the message ID is prefixed with the x-message-id.
+        // https://www.twilio.com/docs/sendgrid/glossary/what-is-x-message-id
+        // https://www.twilio.com/docs/sendgrid/glossary/message-id
+        let x_message_id = response
+            .headers()
+            .get("x-message-id")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+
+        let ids = if let Some(id) = x_message_id {
+            vec![id]
+        } else {
+            vec![]
+        };
+
+        return Ok(ids);
+    }
+}
+
+impl SendGridMailer {
+    fn build_request(m: &Message) -> serde_json::Value {
+        let mut req = json!({
+            "from": Self::build_address(&m.from),
+            "personalizations": [Self::build_personalization(m)],
+            "subject": m.subject,
+            "content": Self::build_content(m),
+        });
+
+        if let Some(reply_to) = &m.reply_to {
+            req["reply_to"] = Self::build_address(reply_to);
+        }
+
+        return req;
+    }
+
+    fn build_personalization(m: &Message) -> serde_json::Value {
+        let to: Vec<_> = m.to.iter().map(Self::build_address).collect();
+        let cc: Vec<_> = m.cc.iter().map(Self::build_address).collect();
+        let bcc: Vec<_> = m.bcc.iter().map(Self::build_address).collect();
+
+        let mut personalization = json!({ "to": to });
+
+        if !cc.is_empty() {
+            personalization["cc"] = json!(cc);
+        }
+
+        if !bcc.is_empty() {
+            personalization["bcc"] = json!(bcc);
+        }
+
+        return personalization;
+    }
+
+    fn build_content(m: &Message) -> Vec<serde_json::Value> {
+        let mut content = Vec::with_capacity(2);
+
+        if let Some(body) = &m.text_body {
+            content.push(json!({
+                "type": "text/plain",
+                "value": body,
+            }));
+        }
+
+        if let Some(body) = &m.html_body {
+            content.push(json!({
+                "type": "text/html",
+                "value": body,
+            }));
+        }
+
+        return content;
+    }
+
+    fn build_address(addr: &Address) -> serde_json::Value {
+        return if let Some(name) = &addr.name {
+            json!({ "email": addr.email, "name": name })
+        } else {
+            json!({ "email": addr.email })
+        };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::MessageBuilder;
+
+    #[test]
+    fn test_sendgrid_mailer() {
+        let message = MessageBuilder::new()
+            .from(Address::with_name("Sender", "sender@example.com"))
+            .to(Address::with_name("Recipient", "recipient@example.com"))
+            .cc(Address::new("cc@example.com"))
+            .subject("Test Email")
+            .text_body("This is a test email.")
+            .build()
+            .unwrap();
+
+        let expected = json!({
+            "from": { "name": "Sender", "email": "sender@example.com" },
+            "personalizations": [
+                {
+                    "to": [{ "name": "Recipient", "email": "recipient@example.com" }],
+                    "cc": [{ "email": "cc@example.com" }],
+                },
+            ],
+            "subject": "Test Email",
+            "content": [
+                { "type": "text/plain", "value": "This is a test email." },
+            ],
+        });
+
+        let actual = SendGridMailer::build_request(&message);
+
+        assert_eq!(actual, expected);
+    }
+}
