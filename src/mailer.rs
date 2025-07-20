@@ -41,3 +41,14 @@ impl From<reqwest::Error> for MailerError {
         return MailerError::UnexpectedError(Box::new(err));
     }
 }
+
+#[cfg(feature = "aws_ses")]
+impl<E, R> From<aws_sdk_sesv2::error::SdkError<E, R>> for MailerError
+where
+    E: Error + 'static,
+    R: fmt::Debug + 'static,
+{
+    fn from(err: aws_sdk_sesv2::error::SdkError<E, R>) -> Self {
+        return MailerError::UnexpectedError(Box::new(err));
+    }
+}

@@ -57,13 +57,7 @@ impl Mailer for SendGridMailer {
             .and_then(|v| v.to_str().ok())
             .map(|s| s.to_string());
 
-        let ids = if let Some(id) = x_message_id {
-            vec![id]
-        } else {
-            vec![]
-        };
-
-        return Ok(ids);
+        return Ok(x_message_id.into_iter().collect());
     }
 }
 
@@ -85,16 +79,15 @@ impl SendGridMailer {
 
     fn build_personalization(m: &Message) -> serde_json::Value {
         let to: Vec<_> = m.to.iter().map(Self::build_address).collect();
-        let cc: Vec<_> = m.cc.iter().map(Self::build_address).collect();
-        let bcc: Vec<_> = m.bcc.iter().map(Self::build_address).collect();
-
         let mut personalization = json!({ "to": to });
 
-        if !cc.is_empty() {
+        if !m.cc.is_empty() {
+            let cc: Vec<_> = m.cc.iter().map(Self::build_address).collect();
             personalization["cc"] = json!(cc);
         }
 
-        if !bcc.is_empty() {
+        if !m.bcc.is_empty() {
+            let bcc: Vec<_> = m.bcc.iter().map(Self::build_address).collect();
             personalization["bcc"] = json!(bcc);
         }
 

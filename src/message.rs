@@ -80,6 +80,11 @@ impl<'a> MessageBuilder<'a> {
         return self;
     }
 
+    pub fn set_reply_to(mut self, address: Option<impl Into<Address<'a>>>) -> Self {
+        self.reply_to = address.map(|addr| addr.into());
+        return self;
+    }
+
     pub fn to(mut self, address: impl Into<Address<'a>>) -> Self {
         self.to.push(address.into());
         return self;
