@@ -1,5 +1,9 @@
 [package]
 name = "gen_mailer"
+description = "A generic mailer for Rust"
+license = "Zlib"
+repository = "https://github.com/lezgomatt/gen_mailer"
+
 version = "0.1.0"
 edition = "2024"
 
