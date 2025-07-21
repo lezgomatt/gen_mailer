@@ -27,7 +27,7 @@ impl ConsoleMailer {
         writeln!(w, "From: {}", m.from)?;
 
         if let Some(reply_to) = &m.reply_to {
-            writeln!(w, "Reply-To: {}", reply_to)?;
+            writeln!(w, "Reply-To: {reply_to}")?;
         }
 
         if !m.to.is_empty() {
@@ -46,7 +46,7 @@ impl ConsoleMailer {
         writeln!(w)?;
 
         if let Some(body) = &m.text_body {
-            writeln!(w, "{}", body)?;
+            writeln!(w, "{body}")?;
         } else {
             writeln!(w, "No text body.")?;
         }
@@ -72,15 +72,12 @@ fn join_addresses(addrs: &[Address]) -> String {
 mod tests {
     use super::*;
 
-    use crate::Address;
-    use crate::MessageBuilder;
-
     #[test]
     fn test_console_mailer() {
-        let message = MessageBuilder::new()
-            .from(Address::with_name("Sender", "sender@example.com"))
-            .to(Address::with_name("Recipient", "recipient@example.com"))
-            .cc(Address::new("cc@example.com"))
+        let message = Message::builder()
+            .from(("Sender", "sender@example.com"))
+            .to(("Recipient", "recipient@example.com"))
+            .cc("cc@example.com")
             .subject("Test Email")
             .text_body("This is a test email.")
             .build()

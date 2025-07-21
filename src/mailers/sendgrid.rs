@@ -126,11 +126,9 @@ impl SendgridMailer {
 mod tests {
     use super::*;
 
-    use crate::MessageBuilder;
-
     #[test]
     fn test_sendgrid_mailer() {
-        let message = MessageBuilder::new()
+        let message = Message::builder()
             .from(Address::with_name("Sender", "sender@example.com"))
             .to(Address::with_name("Recipient", "recipient@example.com"))
             .cc(Address::new("cc@example.com"))

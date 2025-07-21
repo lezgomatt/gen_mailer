@@ -53,7 +53,7 @@ impl fmt::Display for MessageBuilderError {
             }
         };
 
-        return write!(f, "{}", message);
+        return write!(f, "{message}");
     }
 }
 
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_message_builder() {
-        let message = MessageBuilder::new()
+        let message = Message::builder()
             .from("sender@example.com")
             .to("recipient@example.com")
             .subject("Test Email")

@@ -20,9 +20,9 @@ impl fmt::Display for GenericMailerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         return match self {
             GenericMailerError::UnexpectedResponse(status, body) => {
-                write!(f, "Unexpected response: {} - {}", status, body)
+                write!(f, "Unexpected response: {status} - {body}")
             }
-            GenericMailerError::UnexpectedError(error) => write!(f, "Unexpected error: {}", error),
+            GenericMailerError::UnexpectedError(error) => write!(f, "Unexpected error: {error}"),
         };
     }
 }

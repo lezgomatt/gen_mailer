@@ -8,6 +8,7 @@ version = "0.1.0"
 edition = "2024"
 
 [lints.clippy]
+manual_range_contains = "allow"
 needless_return = "allow"
 
 [features]

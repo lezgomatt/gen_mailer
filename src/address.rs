@@ -90,7 +90,7 @@ impl<'a> From<(String, &'a str)> for Address<'a> {
     }
 }
 
-impl<'a> From<(String, String)> for Address<'a> {
+impl From<(String, String)> for Address<'static> {
     fn from((name, email): (String, String)) -> Self {
         return Address::with_name(name, email);
     }
