@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use base64ct::Base64;
-use base64ct::Encoding as _;
+use base64::Engine as _;
+use base64::prelude::BASE64_STANDARD;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address<'a> {
@@ -50,7 +50,7 @@ fn quote_display_name(name: &str) -> String {
     } else {
         // MIME B-encoding (RFC 2047)
         // See: https://en.wikipedia.org/wiki/MIME#Encoded-Word
-        let encoded = Base64::encode_string(name.as_bytes());
+        let encoded = BASE64_STANDARD.encode(name.as_bytes());
 
         return format!("=?UTF-8?B?{encoded}?=");
     }
