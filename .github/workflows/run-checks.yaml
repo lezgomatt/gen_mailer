@@ -1,0 +1,91 @@
+name: Run checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  run-checks:
+    name: Format, lint, typecheck, & test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: rustup update stable && rustup default stable
+    - uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry
+          target
+    - name: Initialize
+      run: |
+        echo "FORMAT_RESULT=❓" >> $GITHUB_ENV
+        echo "LINT_RESULT=❓" >> $GITHUB_ENV
+        echo "TYPECHECK_RESULT=❓" >> $GITHUB_ENV
+        echo "TEST_RESULT=❓" >> $GITHUB_ENV
+    - name: Format
+      continue-on-error: true
+      run: |
+        cargo fmt --version
+        if cargo fmt --all -- --check; then
+          echo "FORMAT_RESULT=✅" >> $GITHUB_ENV
+        else
+          echo "FORMAT_RESULT=❌" >> $GITHUB_ENV
+        fi
+    - name: Lint
+      continue-on-error: true
+      run: |
+        cargo clippy --version
+        if cargo clippy --all-targets --all-features -- -D warnings; then
+          echo "LINT_RESULT=✅" >> $GITHUB_ENV
+        else
+          echo "LINT_RESULT=❌" >> $GITHUB_ENV
+        fi
+    - name: Typecheck
+      continue-on-error: true
+      run: |
+        rustc --version
+        if cargo check --all-targets --all-features; then
+          echo "TYPECHECK_RESULT=✅" >> $GITHUB_ENV
+        else
+          echo "TYPECHECK_RESULT=❌" >> $GITHUB_ENV
+        fi
+    - name: Test
+      if: env.TYPECHECK_RESULT == '✅'
+      continue-on-error: true
+      run: |
+        rustc --version
+        if cargo test --all-features; then
+          echo "TEST_RESULT=✅" >> $GITHUB_ENV
+        else
+          echo "TEST_RESULT=❌" >> $GITHUB_ENV
+        fi
+    - name: Report
+      if: always()
+      run: |
+        echo "| Check     | Result            |" >> $GITHUB_STEP_SUMMARY
+        echo "| :-------- | :---------------: |" >> $GITHUB_STEP_SUMMARY
+        echo "| Format    | $FORMAT_RESULT    |" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint      | $LINT_RESULT      |" >> $GITHUB_STEP_SUMMARY
+        echo "| Typecheck | $TYPECHECK_RESULT |" >> $GITHUB_STEP_SUMMARY
+        echo "| Test      | $TEST_RESULT      |" >> $GITHUB_STEP_SUMMARY
+
+        echo "$FORMAT_RESULT Format"
+        echo "$LINT_RESULT Lint"
+        echo "$TYPECHECK_RESULT Typecheck"
+        echo "$TEST_RESULT Test"
+
+        if [[
+          "$FORMAT_RESULT" == "✅"
+          && "$LINT_RESULT" == "✅"
+          && "$TYPECHECK_RESULT" == "✅"
+          && "$TEST_RESULT" == "✅"
+        ]]; then
+          exit 0
+        else
+          exit 1
+        fi
