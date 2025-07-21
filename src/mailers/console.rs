@@ -88,8 +88,8 @@ mod tests {
 
         let expected = [
             "==================== [ BEGIN EMAIL ] ====================",
-            "From: Sender <sender@example.com>",
-            "To: Recipient <recipient@example.com>",
+            "From: \"Sender\" <sender@example.com>",
+            "To: \"Recipient\" <recipient@example.com>",
             "Cc: cc@example.com",
             "Subject: Test Email",
             "",

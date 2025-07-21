@@ -751,6 +751,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "aws-sdk-sesv2",
+ "base64ct",
  "reqwest",
  "serde",
  "serde_json",

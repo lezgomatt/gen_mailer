@@ -1,6 +1,9 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use base64ct::Base64;
+use base64ct::Encoding as _;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address<'a> {
     pub name: Option<Cow<'a, str>>,
@@ -26,10 +29,35 @@ impl<'a> Address<'a> {
 impl fmt::Display for Address<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         return match &self.name {
-            Some(name) => write!(f, "{} <{}>", name, self.email),
+            Some(name) => write!(f, "{} <{}>", quote_display_name(name), self.email),
             None => write!(f, "{}", self.email),
         };
     }
+}
+
+fn quote_display_name(name: &str) -> String {
+    if name.bytes().all(is_safe_ascii) {
+        let mut escaped = String::new();
+        for byte in name.bytes() {
+            match byte {
+                b'\\' => escaped.push_str("\\\\"),
+                b'"' => escaped.push_str("\\\""),
+                _ => escaped.push(byte as char),
+            }
+        }
+
+        return format!("\"{escaped}\"");
+    } else {
+        // MIME B-encoding (RFC 2047)
+        // See: https://en.wikipedia.org/wiki/MIME#Encoded-Word
+        let encoded = Base64::encode_string(name.as_bytes());
+
+        return format!("=?UTF-8?B?{encoded}?=");
+    }
+}
+
+fn is_safe_ascii(b: u8) -> bool {
+    return b' ' <= b && b <= b'~';
 }
 
 impl<'a> From<&'a str> for Address<'a> {
@@ -85,7 +113,28 @@ mod tests {
         let addr = Address::with_name("Test User", "test@example.com");
         assert!(matches!(addr.name.as_deref(), Some("Test User")));
         assert_eq!(addr.email, "test@example.com");
-        assert_eq!(addr.to_string(), "Test User <test@example.com>");
+        assert_eq!(addr.to_string(), "\"Test User\" <test@example.com>");
+    }
+
+    #[test]
+    fn test_quote_display_name() {
+        let quoted = quote_display_name("Mary");
+        assert_eq!(quoted, "\"Mary\"");
+
+        let quoted = quote_display_name("John Doe");
+        assert_eq!(quoted, "\"John Doe\"");
+
+        let quoted = quote_display_name("Marshall \"Eminem\" Mathers");
+        assert_eq!(quoted, "\"Marshall \\\"Eminem\\\" Mathers\"");
+
+        let quoted = quote_display_name("Saul\\Hudson");
+        assert_eq!(quoted, "\"Saul\\\\Hudson\"");
+
+        let quoted = quote_display_name("María Clara de Tolitol");
+        assert_eq!(quoted, "=?UTF-8?B?TWFyw61hIENsYXJhIGRlIFRvbGl0b2w=?=");
+
+        let quoted = quote_display_name("孫悟空");
+        assert_eq!(quoted, "=?UTF-8?B?5a2r5oKf56m6?=");
     }
 
     #[test]
