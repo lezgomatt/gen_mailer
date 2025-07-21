@@ -27,6 +27,12 @@ pub struct Message<'a> {
 //     pub bytes: Cow<'a, [u8]>,
 // }
 
+impl Message<'_> {
+    pub fn builder<'a>() -> MessageBuilder<'a> {
+        return MessageBuilder::new();
+    }
+}
+
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum MessageBuilderError {
@@ -125,8 +131,18 @@ impl<'a> MessageBuilder<'a> {
         return self;
     }
 
+    pub fn set_text_body(mut self, body: Option<impl Into<Cow<'a, str>>>) -> Self {
+        self.text_body = body.map(|b| b.into());
+        return self;
+    }
+
     pub fn html_body(mut self, body: impl Into<Cow<'a, str>>) -> Self {
         self.html_body = Some(body.into());
+        return self;
+    }
+
+    pub fn set_html_body(mut self, body: Option<impl Into<Cow<'a, str>>>) -> Self {
+        self.html_body = body.map(|b| b.into());
         return self;
     }
 

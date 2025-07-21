@@ -2,16 +2,16 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use crate::Address;
-use crate::Mailer;
-use crate::MailerError;
+use crate::GenericMailer;
+use crate::GenericMailerError;
 use crate::Message;
 
-pub struct SendGridMailer {
+pub struct SendgridMailer {
     client: reqwest::Client,
     api_key: String,
 }
 
-impl SendGridMailer {
+impl SendgridMailer {
     pub fn new(api_key: impl Into<String>) -> Self {
         Self {
             client: reqwest::Client::new(),
@@ -28,8 +28,8 @@ impl SendGridMailer {
 }
 
 #[async_trait]
-impl Mailer for SendGridMailer {
-    async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
+impl GenericMailer for SendgridMailer {
+    async fn send(&self, m: &Message) -> Result<Vec<String>, GenericMailerError> {
         let request = Self::build_request(m);
 
         let response = self
@@ -44,7 +44,7 @@ impl Mailer for SendGridMailer {
             let status_code = response.status().as_u16();
             let body = response.text().await?;
 
-            return Err(MailerError::UnexpectedResponse(status_code, body));
+            return Err(GenericMailerError::UnexpectedResponse(status_code, body));
         }
 
         // NOTE: x-message-id is not the same as the message ID,
@@ -61,7 +61,7 @@ impl Mailer for SendGridMailer {
     }
 }
 
-impl SendGridMailer {
+impl SendgridMailer {
     fn build_request(m: &Message) -> serde_json::Value {
         let mut req = json!({
             "from": Self::build_address(&m.from),
@@ -153,7 +153,7 @@ mod tests {
             ],
         });
 
-        let actual = SendGridMailer::build_request(&message);
+        let actual = SendgridMailer::build_request(&message);
 
         assert_eq!(actual, expected);
     }

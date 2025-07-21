@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use crate::Address;
-use crate::Mailer;
-use crate::MailerError;
+use crate::GenericMailer;
+use crate::GenericMailerError;
 use crate::Message;
 
 pub struct MailtrapMailer {
@@ -28,9 +28,9 @@ impl MailtrapMailer {
 }
 
 #[async_trait]
-impl Mailer for MailtrapMailer {
+impl GenericMailer for MailtrapMailer {
     // See: https://api-docs.mailtrap.io/docs/mailtrap-api-docs/67f1d70aeb62c-send-email-including-templates
-    async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
+    async fn send(&self, m: &Message) -> Result<Vec<String>, GenericMailerError> {
         let request = Self::build_request(m);
 
         let response = self
@@ -47,24 +47,24 @@ impl Mailer for MailtrapMailer {
             let status_code = response.status().as_u16();
             let body = response.text().await?;
 
-            return Err(MailerError::UnexpectedResponse(status_code, body));
+            return Err(GenericMailerError::UnexpectedResponse(status_code, body));
         }
 
         let status_code = response.status().as_u16();
         let text = response.text().await?;
         let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) else {
-            return Err(MailerError::UnexpectedResponse(status_code, text));
+            return Err(GenericMailerError::UnexpectedResponse(status_code, text));
         };
 
         let Some(true) = json.as_object().and_then(|o| o.get("success")?.as_bool()) else {
-            return Err(MailerError::UnexpectedResponse(status_code, text));
+            return Err(GenericMailerError::UnexpectedResponse(status_code, text));
         };
 
         let Some(json_message_ids) = json
             .as_object()
             .and_then(|o| o.get("message_ids")?.as_array())
         else {
-            return Err(MailerError::UnexpectedResponse(status_code, text));
+            return Err(GenericMailerError::UnexpectedResponse(status_code, text));
         };
 
         let ids = json_message_ids

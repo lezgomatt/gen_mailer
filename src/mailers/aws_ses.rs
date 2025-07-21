@@ -6,8 +6,8 @@ use aws_sdk_sesv2::types::EmailContent;
 use aws_sdk_sesv2::types::Message as SesMessage;
 
 use crate::Address;
-use crate::Mailer;
-use crate::MailerError;
+use crate::GenericMailer;
+use crate::GenericMailerError;
 use crate::Message;
 
 pub struct AwsSesMailer {
@@ -23,8 +23,8 @@ pub struct AwsSesFeedbackForwarding {
 }
 
 #[async_trait]
-impl Mailer for AwsSesMailer {
-    async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
+impl GenericMailer for AwsSesMailer {
+    async fn send(&self, m: &Message) -> Result<Vec<String>, GenericMailerError> {
         let mut builder = self.client.send_email();
 
         if let Some(config) = &self.configuration_set {

@@ -3,15 +3,15 @@ use std::io;
 use async_trait::async_trait;
 
 use crate::Address;
-use crate::Mailer;
-use crate::MailerError;
+use crate::GenericMailer;
+use crate::GenericMailerError;
 use crate::Message;
 
 pub struct ConsoleMailer;
 
 #[async_trait]
-impl Mailer for ConsoleMailer {
-    async fn send(&self, m: &Message) -> Result<Vec<String>, MailerError> {
+impl GenericMailer for ConsoleMailer {
+    async fn send(&self, m: &Message) -> Result<Vec<String>, GenericMailerError> {
         Self::send(io::stdout(), m)?;
 
         return Ok(Vec::new());
@@ -20,7 +20,10 @@ impl Mailer for ConsoleMailer {
 
 impl ConsoleMailer {
     fn send(mut w: impl io::Write, m: &Message) -> Result<(), std::io::Error> {
-        writeln!(w, "============ [ BEGIN EMAIL ] ============")?;
+        writeln!(
+            w,
+            "==================== [ BEGIN EMAIL ] ===================="
+        )?;
         writeln!(w, "From: {}", m.from)?;
 
         if let Some(reply_to) = &m.reply_to {
@@ -48,7 +51,10 @@ impl ConsoleMailer {
             writeln!(w, "No text body.")?;
         }
 
-        writeln!(w, "============ [  END EMAIL  ] ============")?;
+        writeln!(
+            w,
+            "==================== [  END EMAIL  ] ===================="
+        )?;
 
         return Ok(());
     }
@@ -81,14 +87,14 @@ mod tests {
             .unwrap();
 
         let expected = [
-            "============ [ BEGIN EMAIL ] ============",
+            "==================== [ BEGIN EMAIL ] ====================",
             "From: Sender <sender@example.com>",
             "To: Recipient <recipient@example.com>",
             "Cc: cc@example.com",
             "Subject: Test Email",
             "",
             "This is a test email.",
-            "============ [  END EMAIL  ] ============",
+            "==================== [  END EMAIL  ] ====================",
             "",
         ]
         .join("\n");

@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 
-use crate::Mailer;
-use crate::MailerError;
+use crate::GenericMailer;
+use crate::GenericMailerError;
 use crate::Message;
 
 pub struct NoopMailer;
 
 #[async_trait]
-impl Mailer for NoopMailer {
-    async fn send(&self, _: &Message) -> Result<Vec<String>, MailerError> {
+impl GenericMailer for NoopMailer {
+    async fn send(&self, _: &Message) -> Result<Vec<String>, GenericMailerError> {
         return Ok(Vec::new());
     }
 }
