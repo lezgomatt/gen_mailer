@@ -20,8 +20,8 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-
         path: |
-          ~/.cargo/registry
-          target
+          ~/.cargo/registry/
+          target/
     - name: Initialize
       run: |
         echo "FORMAT_RESULT=❓" >> $GITHUB_ENV

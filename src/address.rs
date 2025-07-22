@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use base64::Engine as _;
-use base64::prelude::BASE64_STANDARD;
+use crate::utils::encode_mime_b;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address<'a> {
@@ -37,22 +36,22 @@ impl fmt::Display for Address<'_> {
 
 fn quote_display_name(name: &str) -> String {
     if name.bytes().all(is_safe_ascii) {
-        let mut escaped = String::new();
+        // 2 for the quotes, and another 2 as a buffer for the escaped chars
+        let mut result = String::with_capacity(name.len() + 2 + 2);
+
+        result.push('"');
         for byte in name.bytes() {
             match byte {
-                b'\\' => escaped.push_str("\\\\"),
-                b'"' => escaped.push_str("\\\""),
-                _ => escaped.push(byte as char),
+                b'\\' => result.push_str("\\\\"),
+                b'"' => result.push_str("\\\""),
+                _ => result.push(byte as char),
             }
         }
+        result.push('"');
 
-        return format!("\"{escaped}\"");
+        return result;
     } else {
-        // MIME B-encoding (RFC 2047)
-        // See: https://en.wikipedia.org/wiki/MIME#Encoded-Word
-        let encoded = BASE64_STANDARD.encode(name.as_bytes());
-
-        return format!("=?UTF-8?B?{encoded}?=");
+        return encode_mime_b(name);
     }
 }
 

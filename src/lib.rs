@@ -3,6 +3,7 @@ mod generic_mailer;
 mod message;
 
 pub mod mailers;
+pub mod utils;
 
 pub use address::Address;
 pub use generic_mailer::GenericMailer;
