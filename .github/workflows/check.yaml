@@ -21,7 +21,7 @@ jobs:
     - run: |
         rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
         rustc --version --verbose
-        echo RUST_VERSION="`rustc --version`" >> $GITHUB_ENV
+        echo RUST_VERSION="$(rustc --version)" >> $GITHUB_ENV
     - uses: actions/cache@v4
       with:
         key: cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
@@ -35,7 +35,7 @@ jobs:
       run: |
         rustup component add rustfmt
         cargo fmt --version
-        echo FORMAT_VERSION="`cargo fmt --version`" >> $GITHUB_ENV
+        echo FORMAT_VERSION="$(cargo fmt --version)" >> $GITHUB_ENV
         cargo fmt --all -- --check
     - name: Lint
       id: lint
@@ -43,7 +43,7 @@ jobs:
       run: |
         rustup component add clippy
         cargo clippy --version
-        echo LINT_VERSION="`cargo clippy --version`" >> $GITHUB_ENV
+        echo LINT_VERSION="$(cargo clippy --version)" >> $GITHUB_ENV
         cargo clippy --all-targets --all-features -- -D warnings
     - name: Typecheck
       id: typecheck
@@ -86,12 +86,15 @@ jobs:
             `| Test      | ${testEmoji}      |`,
           ].join("\n");
 
+          let versionBlock = [
+            process.env.RUST_VERSION,
+            process.env.FORMAT_VERSION,
+            process.env.LINT_VERSION,
+          ].join("\n");
           let versionDetails = [
             "<details>",
             `  <summary><strong>Toolchain:</strong> <code>${process.env.TOOLCHAIN}</code></summary>`,
-            `  <code>${process.env.RUST_VERSION}</code><br>`,
-            `  <code>${process.env.FORMAT_VERSION}</code><br>`,
-            `  <code>${process.env.LINT_VERSION}</code><br>`,
+            `  <pre><code>${versionBlock}</code></pre>`,
             "</details>",
           ].join("\n");
 

@@ -753,7 +753,7 @@ dependencies = [
 
 [[package]]
 name = "gen_mailer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "aws-sdk-sesv2",

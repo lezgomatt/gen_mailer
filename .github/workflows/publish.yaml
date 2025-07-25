@@ -1,0 +1,32 @@
+name: Publish to crates.io
+run-name: Publish ${{ github.ref_name }}
+
+on:
+  push:
+    tags: [v*]
+
+jobs:
+  extract_version:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
+    outputs:
+      VERSION: ${{ steps.extractor.outputs.VERSION }}
+    steps:
+    - id: extractor
+      run: echo VERSION="${TAG#v}" >> $GITHUB_OUTPUT
+  publish:
+    needs: [extract_version]
+    runs-on: ubuntu-latest
+    environment:
+      name: publish
+      url: https://crates.io/crates/gen_mailer/${{ needs.extract_version.outputs.VERSION }}
+    permissions:
+      id-token: write # Needed to generate token for trusted publishing
+    steps:
+    - uses: actions/checkout@v4
+    - id: auth
+      uses: rust-lang/crates-io-auth-action@v1
+    - run: cargo publish --no-verify
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
