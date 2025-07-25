@@ -1,0 +1,109 @@
+name: Run checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  run-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+        rustc --version --verbose
+    - uses: actions/cache@v4
+      with:
+        key: cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+        # Exact match only, otherwise the cache may grow indefinitely
+        path: |
+          ~/.cargo/registry/
+          target/
+    - name: Format
+      id: format
+      continue-on-error: true
+      run: |
+        cargo fmt --version
+        cargo fmt --all -- --check
+    - name: Lint
+      id: lint
+      continue-on-error: true
+      run: |
+        cargo clippy --version
+        cargo clippy --all-targets --all-features -- -D warnings
+    - name: Typecheck
+      id: typecheck
+      continue-on-error: true
+      run: cargo check --all-targets --all-features
+    - name: Test
+      id: test
+      if: steps.typecheck.outcome == 'success'
+      continue-on-error: true
+      run: cargo test --all-features
+    - name: Report
+      if: always()
+      env:
+        FORMAT_OUTCOME: ${{ steps.format.outcome }}
+        LINT_OUTCOME: ${{ steps.lint.outcome }}
+        TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+        TEST_OUTCOME: ${{ steps.test.outcome }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          let emojiMapping = {
+            "success": "✅",
+            "failure": "❌",
+            "cancelled": "🚫",
+            "skipped": "➖",
+          };
+
+          let formatEmoji = emojiMapping[process.env.FORMAT_OUTCOME];
+          let lintEmoji = emojiMapping[process.env.LINT_OUTCOME];
+          let typecheckEmoji = emojiMapping[process.env.TYPECHECK_OUTCOME];
+          let testEmoji = emojiMapping[process.env.TEST_OUTCOME];
+
+          let mdTable = [];
+          mdTable.push("| Check     | Result            |");
+          mdTable.push("| :-------- | :---------------: |");
+          mdTable.push(`| Format    | ${formatEmoji}    |`);
+          mdTable.push(`| Lint      | ${lintEmoji}      |`);
+          mdTable.push(`| Typecheck | ${typecheckEmoji} |`);
+          mdTable.push(`| Test      | ${testEmoji}      |`);
+
+          let mdSummary = mdTable.join("\n") + "\n";
+
+          core.summary.addRaw(mdSummary);
+
+          if (context.issue != null) {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: mdSummary,
+            });
+          }
+
+          console.log(`${formatEmoji} Format`);
+          console.log(`${lintEmoji} Lint`);
+          console.log(`${typecheckEmoji} Typecheck`);
+          console.log(`${testEmoji} Test`);
+
+          let outcomes = [
+            process.env.FORMAT_OUTCOME,
+            process.env.LINT_OUTCOME,
+            process.env.TYPECHECK_OUTCOME,
+            process.env.TEST_OUTCOME,
+          ];
+
+          if (outcomes.some((it) => it !== "success")) {
+            core.setFailed(`One or more checks did not succeed.`);
+          }
