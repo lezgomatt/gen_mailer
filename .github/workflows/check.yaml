@@ -32,12 +32,14 @@ jobs:
       id: format
       continue-on-error: true
       run: |
+        rustup component add rustfmt
         cargo fmt --version
         cargo fmt --all -- --check
     - name: Lint
       id: lint
       continue-on-error: true
       run: |
+        rustup component add clippy
         cargo clippy --version
         cargo clippy --all-targets --all-features -- -D warnings
     - name: Typecheck
@@ -52,6 +54,7 @@ jobs:
     - name: Report
       if: always()
       env:
+        TOOLCHAIN: ${{ matrix.toolchain }}
         FORMAT_OUTCOME: ${{ steps.format.outcome }}
         LINT_OUTCOME: ${{ steps.lint.outcome }}
         TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
@@ -71,6 +74,8 @@ jobs:
           let typecheckEmoji = emojiMapping[process.env.TYPECHECK_OUTCOME];
           let testEmoji = emojiMapping[process.env.TEST_OUTCOME];
 
+          let mdHeader = `# Check results (${process.env.TOOLCHAIN})`;
+
           let mdTable = [];
           mdTable.push("| Check     | Result            |");
           mdTable.push("| :-------- | :---------------: |");
@@ -79,11 +84,14 @@ jobs:
           mdTable.push(`| Typecheck | ${typecheckEmoji} |`);
           mdTable.push(`| Test      | ${testEmoji}      |`);
 
-          let mdSummary = mdTable.join("\n") + "\n";
+          let mdSummary = [
+            mdHeader,
+            mdTable.join("\n"),
+          ].join("\n\n") + "\n";
 
-          core.summary.addRaw(mdSummary);
+          core.summary.addRaw(mdSummary).write();
 
-          if (context.issue != null) {
+          if (context.issue.number != null) {
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
