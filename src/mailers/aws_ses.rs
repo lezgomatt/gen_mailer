@@ -4,6 +4,8 @@ use aws_sdk_sesv2::types::Content;
 use aws_sdk_sesv2::types::Destination;
 use aws_sdk_sesv2::types::EmailContent;
 use aws_sdk_sesv2::types::Message as SesMessage;
+use aws_sdk_sesv2::types::MessageHeader;
+use aws_sdk_sesv2::types::MessageTag;
 
 use crate::Address;
 use crate::GenericMailer;
@@ -51,6 +53,21 @@ impl GenericMailer for AwsSesMailer {
         let content = Self::build_content(m);
         builder = builder.content(content);
 
+        if m.category.is_some() || !m.headers.is_empty() {
+            let mut tags = vec![];
+
+            if let Some(category) = &m.category {
+                tags.push(build_tag("category", category));
+            }
+
+            tags.reserve(m.headers.len());
+            for (k, v) in &m.headers {
+                tags.push(build_tag(k, v));
+            }
+
+            builder = builder.set_email_tags(Some(tags));
+        }
+
         let response = builder.send().await?;
 
         return Ok(response.message_id.into_iter().collect());
@@ -78,11 +95,18 @@ impl AwsSesMailer {
     }
 
     fn build_content(m: &Message) -> EmailContent {
+        let mut builder = SesMessage::builder();
+
+        if !m.headers.is_empty() {
+            let headers = m.headers.iter().map(|(k, v)| build_header(k, v)).collect();
+            builder = builder.set_headers(Some(headers));
+        }
+
         let subject = encode_string(&m.subject);
         let body = Self::build_body(m);
-        let message = SesMessage::builder().subject(subject).body(body).build();
+        builder = builder.subject(subject).body(body);
 
-        return EmailContent::builder().simple(message).build();
+        return EmailContent::builder().simple(builder.build()).build();
     }
 
     fn build_body(m: &Message) -> Body {
@@ -98,6 +122,22 @@ impl AwsSesMailer {
 
         return arnold.build();
     }
+}
+
+fn build_tag(k: &str, v: &str) -> MessageTag {
+    return MessageTag::builder()
+        .name(k)
+        .value(v)
+        .build()
+        .expect("Name and value should be set");
+}
+
+fn build_header(k: &str, v: &str) -> MessageHeader {
+    return MessageHeader::builder()
+        .name(k)
+        .value(v)
+        .build()
+        .expect("Name and value should be set");
 }
 
 fn encode_string(s: &str) -> Content {

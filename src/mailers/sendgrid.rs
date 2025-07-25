@@ -29,6 +29,7 @@ impl SendgridMailer {
 
 #[async_trait]
 impl GenericMailer for SendgridMailer {
+    // See: https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
     async fn send(&self, m: &Message) -> Result<Vec<String>, GenericMailerError> {
         let request = Self::build_request(m);
 
@@ -72,6 +73,24 @@ impl SendgridMailer {
 
         if let Some(reply_to) = &m.reply_to {
             req["reply_to"] = Self::build_address(reply_to);
+        }
+
+        if !m.headers.is_empty() {
+            let map = serde_json::Map::from_iter(
+                m.headers.iter().map(|(k, v)| (k.to_string(), json!(v))),
+            );
+            req["headers"] = serde_json::Value::from(map);
+        }
+
+        if let Some(category) = &m.category {
+            req["categories"] = json!([category]);
+        }
+
+        if !m.metadata.is_empty() {
+            let map = serde_json::Map::from_iter(
+                m.metadata.iter().map(|(k, v)| (k.to_string(), json!(v))),
+            );
+            req["custom_args"] = serde_json::Value::from(map);
         }
 
         return req;

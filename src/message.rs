@@ -5,20 +5,20 @@ use super::Address;
 
 #[derive(Debug, Clone)]
 pub struct Message<'a> {
+    pub category: Option<Cow<'a, str>>,
+    pub metadata: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     pub from: Address<'a>,
     pub reply_to: Option<Address<'a>>,
     pub to: Vec<Address<'a>>,
     pub cc: Vec<Address<'a>>,
     pub bcc: Vec<Address<'a>>,
+    pub headers: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     pub subject: Cow<'a, str>,
     pub text_body: Option<Cow<'a, str>>,
     pub html_body: Option<Cow<'a, str>>,
     // TODO:
     // pub attachments: Vec<MessageAttachment<'a>>,
     // pub inline_attachments: Vec<MessageAttachment<'a>>,
-    // pub headers: Vec<(Cow<'a, str>, Cow<'a, str>)>,
-    // pub category: Cow<'a, str>,
-    // pub metadata: Vec<(Cow<'a, str>, Cow<'a, str>)>,
 }
 
 // pub struct MessageAttachment<'a> {
@@ -59,13 +59,16 @@ impl fmt::Display for MessageBuilderError {
 
 impl std::error::Error for MessageBuilderError {}
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct MessageBuilder<'a> {
+    category: Option<Cow<'a, str>>,
+    metadata: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     from: Option<Address<'a>>,
     reply_to: Option<Address<'a>>,
     to: Vec<Address<'a>>,
     cc: Vec<Address<'a>>,
     bcc: Vec<Address<'a>>,
+    headers: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     subject: Option<Cow<'a, str>>,
     text_body: Option<Cow<'a, str>>,
     html_body: Option<Cow<'a, str>>,
@@ -76,73 +79,155 @@ impl<'a> MessageBuilder<'a> {
         return Self::default();
     }
 
+    pub fn category(mut self, category: impl Into<Cow<'a, str>>) -> Self {
+        self.category = Some(category.into());
+
+        return self;
+    }
+
+    pub fn set_category(mut self, category: Option<impl Into<Cow<'a, str>>>) -> Self {
+        self.category = category.map(|c| c.into());
+
+        return self;
+    }
+
+    pub fn metadata(
+        mut self,
+        key: impl Into<Cow<'a, str>>,
+        value: impl Into<Cow<'a, str>>,
+    ) -> Self {
+        self.metadata.push((key.into(), value.into()));
+
+        return self;
+    }
+
+    pub fn set_metadata<I, K, V>(mut self, kv_pairs: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<Cow<'a, str>>,
+        V: Into<Cow<'a, str>>,
+    {
+        self.metadata = kv_pairs
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+
+        return self;
+    }
+
     pub fn from(mut self, address: impl Into<Address<'a>>) -> Self {
         self.from = Some(address.into());
+
         return self;
     }
 
     pub fn reply_to(mut self, address: impl Into<Address<'a>>) -> Self {
         self.reply_to = Some(address.into());
+
         return self;
     }
 
     pub fn set_reply_to(mut self, address: Option<impl Into<Address<'a>>>) -> Self {
         self.reply_to = address.map(|addr| addr.into());
+
         return self;
     }
 
     pub fn to(mut self, address: impl Into<Address<'a>>) -> Self {
         self.to.push(address.into());
+
         return self;
     }
 
-    pub fn set_to(mut self, addresses: Vec<impl Into<Address<'a>>>) -> Self {
+    pub fn set_to<I, T>(mut self, addresses: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<Address<'a>>,
+    {
         self.to = addresses.into_iter().map(|addr| addr.into()).collect();
+
         return self;
     }
 
     pub fn cc(mut self, address: impl Into<Address<'a>>) -> Self {
         self.cc.push(address.into());
+
         return self;
     }
 
-    pub fn set_cc(mut self, addresses: Vec<impl Into<Address<'a>>>) -> Self {
+    pub fn set_cc<I, T>(mut self, addresses: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<Address<'a>>,
+    {
         self.cc = addresses.into_iter().map(|addr| addr.into()).collect();
+
         return self;
     }
 
     pub fn bcc(mut self, address: impl Into<Address<'a>>) -> Self {
         self.bcc.push(address.into());
+
         return self;
     }
 
-    pub fn set_bcc(mut self, addresses: Vec<impl Into<Address<'a>>>) -> Self {
+    pub fn set_bcc<I, T>(mut self, addresses: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<Address<'a>>,
+    {
         self.bcc = addresses.into_iter().map(|addr| addr.into()).collect();
+
+        return self;
+    }
+
+    pub fn headers(mut self, key: impl Into<Cow<'a, str>>, value: impl Into<Cow<'a, str>>) -> Self {
+        self.headers.push((key.into(), value.into()));
+
+        return self;
+    }
+
+    pub fn set_headers<I, K, V>(mut self, kv_pairs: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<Cow<'a, str>>,
+        V: Into<Cow<'a, str>>,
+    {
+        self.headers = kv_pairs
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+
         return self;
     }
 
     pub fn subject(mut self, subject: impl Into<Cow<'a, str>>) -> Self {
         self.subject = Some(subject.into());
+
         return self;
     }
 
     pub fn text_body(mut self, body: impl Into<Cow<'a, str>>) -> Self {
         self.text_body = Some(body.into());
+
         return self;
     }
 
     pub fn set_text_body(mut self, body: Option<impl Into<Cow<'a, str>>>) -> Self {
         self.text_body = body.map(|b| b.into());
+
         return self;
     }
 
     pub fn html_body(mut self, body: impl Into<Cow<'a, str>>) -> Self {
         self.html_body = Some(body.into());
+
         return self;
     }
 
     pub fn set_html_body(mut self, body: Option<impl Into<Cow<'a, str>>>) -> Self {
         self.html_body = body.map(|b| b.into());
+
         return self;
     }
 
@@ -159,16 +244,19 @@ impl<'a> MessageBuilder<'a> {
             return Err(MessageBuilderError::MissingBody);
         }
 
-        Ok(Message {
+        return Ok(Message {
+            category: self.category,
+            metadata: self.metadata,
             from,
             reply_to: self.reply_to,
             to: self.to,
             cc: self.cc,
             bcc: self.bcc,
+            headers: self.headers,
             subject,
             text_body: self.text_body,
             html_body: self.html_body,
-        })
+        });
     }
 }
 

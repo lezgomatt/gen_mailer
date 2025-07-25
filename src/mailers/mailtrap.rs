@@ -105,6 +105,24 @@ impl MailtrapMailer {
             req["html"] = json!(body);
         }
 
+        if !m.headers.is_empty() {
+            let map = serde_json::Map::from_iter(
+                m.headers.iter().map(|(k, v)| (k.to_string(), json!(v))),
+            );
+            req["headers"] = serde_json::Value::from(map);
+        }
+
+        if let Some(category) = &m.category {
+            req["category"] = json!(category);
+        }
+
+        if !m.metadata.is_empty() {
+            let map = serde_json::Map::from_iter(
+                m.metadata.iter().map(|(k, v)| (k.to_string(), json!(v))),
+            );
+            req["custom_variables"] = serde_json::Value::from(map);
+        }
+
         return req;
     }
 
