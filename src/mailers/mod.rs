@@ -1,8 +1,8 @@
 mod console;
 pub use console::ConsoleMailer;
 
-mod noop;
-pub use noop::NoopMailer;
+mod no_op;
+pub use no_op::NoOpMailer;
 
 #[cfg(feature = "aws_ses")]
 pub mod aws_ses;
